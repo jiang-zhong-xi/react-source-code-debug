@@ -218,7 +218,8 @@ if (supportsMutation) {
     const currentHostContext = getHostContext();
     // TODO: Experiencing an error where oldProps is null. Suggests a host
     // component is hitting the resume path. Figure out why. Possibly
-    // related to `hidden`.
+    // related to `hidden`
+    // 对比oldProps和newProps之间的差异，并保存到updatePayload中
     const updatePayload = prepareUpdate(
       instance,
       type,
@@ -231,6 +232,7 @@ if (supportsMutation) {
     workInProgress.updateQueue = (updatePayload: any);
     // If the update payload indicates that there is a change or if there
     // is a new ref we mark this as an update. All the work is done in commitWork.
+    //如果有更新在WorkInProgress的flags中添加Update，在commitWork中更新fiber和DOM属性
     if (updatePayload) {
       markUpdate(workInProgress);
     }
@@ -698,8 +700,10 @@ function completeWork(
     }
     case HostComponent: {
       popHostContext(workInProgress);
+      // 获取根DOM用于创建元素
       const rootContainerInstance = getRootHostContainer();
       const type = workInProgress.type;
+      // 是更新不是首次渲染并且有DOM，diff中复用的操作
       if (current !== null && workInProgress.stateNode != null) {
         updateHostComponent(
           current,
@@ -744,6 +748,7 @@ function completeWork(
             markUpdate(workInProgress);
           }
         } else {
+          // 创建当前fiber对应的DOM元素
           const instance = createInstance(
             type,
             newProps,
@@ -751,7 +756,7 @@ function completeWork(
             currentHostContext,
             workInProgress,
           );
-
+            // 把子fiber中所有元素插入到当前元素
           appendAllChildren(instance, workInProgress, false, false);
 
           workInProgress.stateNode = instance;
@@ -759,6 +764,7 @@ function completeWork(
           // Certain renderers require commit-time effects for initial mount.
           // (eg DOM renderer supports auto-focus for certain elements).
           // Make sure such renderers get scheduled for later work.
+          // 给新创建的DOM添加新Props
           if (
             finalizeInitialChildren(
               instance,

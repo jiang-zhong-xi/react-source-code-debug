@@ -307,7 +307,7 @@ function ChildReconciler(shouldTrackSideEffects) {
 
   function mapRemainingChildren(
     returnFiber: Fiber,
-    currentFirstChild: Fiber,
+    du: Fiber,
   ): Map<string | number, Fiber> {
     // Add the remaining children to a temporary map so that we can find them by
     // keys quickly. Implicit (null) keys get added to this set with their index
@@ -340,23 +340,27 @@ function ChildReconciler(shouldTrackSideEffects) {
     lastPlacedIndex: number,
     newIndex: number,
   ): number {
+    // newIndex是递增的
     newFiber.index = newIndex;
     if (!shouldTrackSideEffects) {
       // Noop.
       return lastPlacedIndex;
     }
     const current = newFiber.alternate;
-    if (current !== null) {
+    if (current !== null) { // 是复用的current fiber
       const oldIndex = current.index;
+      // 移动复用
       if (oldIndex < lastPlacedIndex) {
         // This is a move.
         newFiber.flags = Placement;
         return lastPlacedIndex;
+        // 完全复用
       } else {
         // This item can stay in place.
         return oldIndex;
       }
     } else {
+      // 插入新节点
       // This is an insertion.
       newFiber.flags = Placement;
       return lastPlacedIndex;
@@ -582,7 +586,7 @@ function ChildReconciler(shouldTrackSideEffects) {
       }
       return updateTextNode(returnFiber, oldFiber, '' + newChild, lanes);
     }
-
+    // 几乎所有节点的都是这样的逻辑，key不同则返回null，退出本轮；只有key相同，则创建一个fiber；key和elementType都相同，则复用。
     if (typeof newChild === 'object' && newChild !== null) {
       switch (newChild.$$typeof) {
         case REACT_ELEMENT_TYPE: {
@@ -803,7 +807,7 @@ function ChildReconciler(shouldTrackSideEffects) {
     let newIdx = 0;
     let nextOldFiber = null;
     for (; oldFiber !== null && newIdx < newChildren.length; newIdx++) {
-      if (oldFiber.index > newIdx) {
+      if (oldFiber.index > newIdx) { // 不知道什么情况会出现，这里的意思是oldFiber.index如果大，则需要等到newIdx相等了
         nextOldFiber = oldFiber;
         oldFiber = null;
       } else {
@@ -815,17 +819,20 @@ function ChildReconciler(shouldTrackSideEffects) {
         newChildren[newIdx],
         lanes,
       );
+      // 没匹配到key相同的退出第一轮
       if (newFiber === null) {
+        // 这样是比较慢的路径
         // TODO: This breaks on empty slots like null children. That's
         // unfortunate because it triggers the slow path all the time. We need
         // a better way to communicate whether this was a miss or null,
         // boolean, undefined, etc.
-        if (oldFiber === null) {
+        if (oldFiber === null) { // 和上面的f (oldFiber.index > newIdx) 用来等oldFiber.index 和 newIdx相等
           oldFiber = nextOldFiber;
         }
         break;
       }
       if (shouldTrackSideEffects) {
+        // newFiber是创建的，那么对应的current fiber只是key相同，可删除了
         if (oldFiber && newFiber.alternate === null) {
           // We matched the slot, but we didn't reuse the existing fiber, so we
           // need to delete the existing child.
@@ -833,6 +840,7 @@ function ChildReconciler(shouldTrackSideEffects) {
         }
       }
       lastPlacedIndex = placeChild(newFiber, lastPlacedIndex, newIdx);
+      // resultingFirstChild作为previousNewFiber链表的第一个节点，最后直接返回resultingFirstChild即可，previousNewFiber是newChildren对应的fiber
       if (previousNewFiber === null) {
         // TODO: Move out of the loop. This only happens for the first run.
         resultingFirstChild = newFiber;

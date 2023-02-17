@@ -515,6 +515,7 @@ export function processUpdateQueue<State>(
           props,
           instance,
         );
+        console.log('newState', newState)
         const callback = update.callback;
         if (callback !== null) {
           workInProgress.flags |= Callback;

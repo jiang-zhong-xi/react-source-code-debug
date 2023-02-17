@@ -199,6 +199,7 @@ export function getEventPriorityForPluginSystem(
 export function getEventPriorityForListenerSystem(
   type: DOMEventName,
 ): EventPriority {
+  debugger;
   const priority = eventPriorities.get(type);
   if (priority !== undefined) {
     return priority;

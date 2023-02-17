@@ -1759,23 +1759,23 @@ function completeUnitOfWork(unitOfWork: Fiber): void {
     if ((completedWork.flags & Incomplete) === NoFlags) {
       setCurrentDebugFiberInDEV(completedWork);
       let next;
-      if (
-        !enableProfilerTimer ||
-        (completedWork.mode & ProfileMode) === NoMode
-      ) {
-        next = completeWork(current, completedWork, subtreeRenderLanes);
-      } else {
-        startProfilerTimer(completedWork);
-        next = completeWork(current, completedWork, subtreeRenderLanes);
-        // Update render duration assuming we didn't error.
-        stopProfilerTimerIfRunningAndRecordDelta(completedWork, false);
-      }
-      resetCurrentDebugFiberInDEV();
+        if (
+          !enableProfilerTimer ||
+          (completedWork.mode & ProfileMode) === NoMode
+        ) {
+          next = completeWork(current, completedWork, subtreeRenderLanes);
+        } else {
+          startProfilerTimer(completedWork);
+          next = completeWork(current, completedWork, subtreeRenderLanes);
+          // Update render duration assuming we didn't error.
+          stopProfilerTimerIfRunningAndRecordDelta(completedWork, false);
+        }
+        resetCurrentDebugFiberInDEV();
 
-      if (next !== null) {
-        // Completing this fiber spawned new work. Work on that next.
-        workInProgress = next;
-        return;
+        if (next !== null) {
+          // Completing this fiber spawned new work. Work on that next.
+          workInProgress = next;
+          return;
       }
 
       resetChildLanes(completedWork);
@@ -1788,9 +1788,13 @@ function completeUnitOfWork(unitOfWork: Fiber): void {
         // Append all the effects of the subtree and this fiber onto the effect
         // list of the parent. The completion order of the children affects the
         // side-effect order.
+        // 如果看childToDelete函数，则当前节点没有effect，父节点有，那么下面的逻辑都不命中
+        // 但是在回溯的过程中，需要把effect往上冒泡，则会命中此逻辑
+        // 如果父节点没有effect则把当前节点的effect给了父节点
         if (returnFiber.firstEffect === null) {
           returnFiber.firstEffect = completedWork.firstEffect;
         }
+        // 如果父节点和当前节点都有effete，则把当前节点放入父节点的effect链表
         if (completedWork.lastEffect !== null) {
           if (returnFiber.lastEffect !== null) {
             returnFiber.lastEffect.nextEffect = completedWork.firstEffect;

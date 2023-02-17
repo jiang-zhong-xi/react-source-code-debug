@@ -19,7 +19,11 @@ class EventDemo extends React.Component{
   }
 
   onDemoClick = e => {
-
+    debugger;
+    this.setState({
+      count: this.state.count + 1
+    })
+    debugger;
     this.setState({
       count: this.state.count + 1
     })
